@@ -1,0 +1,6 @@
+
+MAKEFILES_DIR = $(abspath $(dir $(lastword $(MAKEFILE_LIST)))/..)
+
+include $(MAKEFILES_DIR)/hw/stm32f100rb.gmake
+
+
