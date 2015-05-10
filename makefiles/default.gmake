@@ -1,0 +1,10 @@
+
+ifndef SOURCE_DIR
+$(error SOURCE_DIR not defined!)
+endif
+
+SOURCES=$(wildcard $(SOURCE_DIR)/*.c)
+
+OBJECTS=$(basename $(patsubst %.c,%.o,$(SOURCES)))
+
+all_objects: $(OBJECTS)

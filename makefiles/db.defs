@@ -1,0 +1,22 @@
+
+include $(dir $(lastword $(MAKEFILE_LIST)))/conf.defs
+
+
+DB.cortex-m3.cc 	:= arm-none-eabi-gcc -mcpu=cortex-m3 -march=armv7-m -mthumb
+DB.cortex-m3.as		:= arm-none-eabi-as
+DB.cortex-m3.ld 	:= arm-none-eabi-ld
+DB.cortex-m3.ldscripts 	:=
+
+DB.stm32f100xx.processor 	:= cortex-m3
+
+DB.stm32f100xx.cppflags 	:= 
+DB.stm32f100xx.ldscripts  	:= 
+
+DB.stm32f100rb.cppflags		:= -DSTM32F100xx_VL_MD
+DB.stm32f100rb.processor	:= $(DB.stm32f100xx.processor)
+DB.stm32f100rb.cc		:= $(DB.stm32f100xx.cc)
+
+DB.stm32vldiscovery.processor 	:= $(DB.stm32f100rb.processor)
+DB.stm32vldiscovery.cc		:= $(DB.$(DB.stm32vldiscovery.processor).cc)
+DB.stm32vldiscovery.as		:= $(DB.$(DB.stm32vldiscovery.processor).as)
+

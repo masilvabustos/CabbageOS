@@ -1,0 +1,29 @@
+
+include last-makefile.defs
+
+include conf.defs db.defs
+
+SUFFIXES=.c .s .S .cxx
+
+list-sources 	=$(foreach suffix,$(SUFFIXES),$(wildcard $(1)/*$(suffix)))
+
+find-sources	=$(shell find $(1) -false $(foreach suffix,$(SUFFIXES),-o -name "*$(suffix)"))
+
+PARENT_MAKEFILE =$(word 1,$(subst $(MAKEFILES),,$(MAKEFILE_LIST)))
+
+get-objects 	=$(addsuffix .o, $(basename $(subst $(abspath $(SOURCE_DIR))/,,$(abspath $(1)))))
+
+make-include-list = $(foreach subdir,$(2),$(1)/$(subdir)/collect.gmake)
+
+$(SOURCE_DIR)/%/collect.gmake:
+	echo 'OBJECTS += $$(call get-objects,$$(call find-sources,$(dir $@)))' > $@
+	
+define COLLECT_OBJECTS
+
+OBJECTS += $(call get-objects,$(LAST_MAKEFILE_DIR))
+
+endef
+
+OBJECTS :=
+
+

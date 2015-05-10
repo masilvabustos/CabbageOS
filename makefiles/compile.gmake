@@ -1,0 +1,40 @@
+
+ifeq ($(origin OBJECTS),undefined)
+
+$(info OBJECTS not defined, recursing.)
+
+THIS := $(lastword $(MAKEFILE_LIST))
+
+include collect-begin.gmake
+
+ifeq ($(.DEFAULT_GOAL),)
+.PHONY: dummy
+dummy:
+	$(MAKE) -f $(THIS) -I$(dir $(THIS)) MAKEFILES="collect-begin.gmake $(call make-include-list,$(SOURCE_DIR),$(SOURCE_SUBDIRS))"
+
+else
+%:
+	$(MAKE) -f $(THIS) -I$(dir $(THIS))  $@ MAKEFILES="collect-begin.gmake $(call make-include-list,$(SOURCE_DIR),$(SOURCE_SUBDIRS))"
+endif
+
+else
+
+include db.defs macros.defs
+
+CC = $(DB.$(HW).cc)
+AS = $(DB.$(HW).as)
+
+.DEFAULT_GOAL := all-objects
+
+#OBJECTS := $(subst $(abspath $(SOURCE_DIR))/,,$(OBJECTS))
+
+VPATH = $(SOURCE_DIR)
+
+.PHONY: subdirs all-objects
+
+all-objects: subdirs $(OBJECTS)
+
+subdirs:
+	mkdir -p $(dir $(OBJECTS))
+
+endif #ifndef OBJECTS

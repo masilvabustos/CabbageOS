@@ -1,0 +1,9 @@
+
+CC = $(TARGET-TRIPLET)-gcc
+AS = $(TARGET-TRIPLET)-as
+
+ifeq ARCH,cm3
+TARGET-TRIPLET=arm-none-eabi
+CC += -mthumb -mcpu=cortex-m3 -march=armv7-m
+endif
+

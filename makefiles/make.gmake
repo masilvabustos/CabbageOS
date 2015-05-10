@@ -1,0 +1,14 @@
+
+include makefiles/collect-begin.gmake #for make-include-list
+
+libcabbage.a: objects 
+	$(AR) cr $@ $(shell find $(BUILD_DIR) -name *.o)
+
+objects: $(BUILD_DIR)
+	$(MAKE) -C $(BUILD_DIR) -f $(PWD)/makefiles/compile.gmake -I$(PWD)/makefiles/ SOURCE_DIR=$(PWD) SOURCE_SUBDIRS=$(SOURCE_SUBDIRS)
+
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)
+
+.DEFAULT_GOAL :=
+
