@@ -1,4 +1,0 @@
-
-TARGET-TRIPLET=arm-none-eabi
-
-PROCESSOR=cortex-m3

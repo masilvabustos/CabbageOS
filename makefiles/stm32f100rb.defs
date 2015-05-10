@@ -1,5 +1,0 @@
-
-LAST_MAKEFILE_DIR = $(dir $(lastword $(MAKEFILE_LIST)))
-
-include $(LAST_MAKEFILE_DIR)/cortex-m3.defs
-
