@@ -1,0 +1,7 @@
+
+Context independent makefiles
+
+There are no assumptions about previously included makefiles
+or variable definitions.
+
+

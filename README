@@ -1,0 +1,12 @@
+
+CabbageOS
+=========
+
+Just another RTOS.
+
+Project aims:
+
+* Single Unix compliant.
+* Exokernel based.
+* Fully extensible and scalable.
+
