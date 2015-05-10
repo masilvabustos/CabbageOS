@@ -1,0 +1,4 @@
+
+LAST_MAKEFILE 		= $(lastword $(MAKEFILE_LIST))
+LAST_MAKEFILE_DIR 	= $(dir $(LAST_MAKEFILE))
+

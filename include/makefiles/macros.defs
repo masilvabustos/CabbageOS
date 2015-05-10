@@ -1,0 +1,10 @@
+
+list-sources 	=$(foreach suffix,.c .s .S,$(wildcard $(1)/*$(suffix)))
+
+PARENT_MAKEFILE =$(word 1,$(subst $(MAKEFILES),,$(MAKEFILE_LIST)))
+
+get-objects 	=$(subst $(abspath $(dir $(PARENT_MAKEFILE))),,$(abspath $(patsubst %.c,%.o,$(call list-sources,$(1)))))
+
+ 
+$(sort $(dir $(OBJECTS))): 
+	mkdir -p $@
