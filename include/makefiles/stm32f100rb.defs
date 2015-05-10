@@ -1,5 +1,5 @@
 
-override CPPFLAGS += -DSTM32F10x_VL_MD
+LAST_MAKEFILE_DIR = $(dir $(lastword $(MAKEFILE_LIST)))
 
-include $(MAKEFILES_DIR)/arch/cortex-m3.gmake
+include $(LAST_MAKEFILE_DIR)/cortex-m3.defs
 

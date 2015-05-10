@@ -1,2 +1,10 @@
 
+OBJECTS += $(call get-objects,$(LAST_MAKEFILE_DIR))
+
+ifndef PROCESSOR
+$(error PROCESSOR not defined!)
+endif
+
+include $(LAST_MAKEFILE_DIR)/$(PROCESSOR)/objects.gmake
+
 

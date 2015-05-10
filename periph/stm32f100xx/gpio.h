@@ -4,9 +4,9 @@
 
 #define __packed__ __attribute__ ((packed))
 
-typedef __attribute__ ((packed)) int bitfield_t;
+#include <stdint.h>
 
-struct bita8_t {
+typedef struct {
 	int bit_0 : 1;
 	int bit_1 : 1;
 	int bit_2 : 1;
@@ -15,7 +15,7 @@ struct bita8_t {
 	int bit_5 : 1;
 	int bit_6 : 1;
 	int bit_7 : 1;
-};
+} bita8_t;
 
 union gpio_cr_u {
 	uint32_t cr_dword;
@@ -48,8 +48,5 @@ union gpio_lckr_u {
 	uint16_t lckr_word[2];
 	bita8_t lckr_bita[4];
 };
-
-#endif
-
 
 #endif

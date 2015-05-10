@@ -1,3 +1,3 @@
 
-OBJECTS_LIST += $(HERE_OBJECTS)
+OBJECTS += $(call get-objects,$(LAST_MAKEFILE_DIR))
 

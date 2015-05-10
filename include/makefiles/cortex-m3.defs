@@ -1,6 +1,4 @@
 
 TARGET-TRIPLET=arm-none-eabi
 
-override CC += -mthumb -mcpu=cortex-m3 -march=armv7-m
-
 PROCESSOR=cortex-m3
