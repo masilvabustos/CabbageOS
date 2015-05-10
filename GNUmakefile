@@ -1,11 +1,11 @@
 
-SOURCE_DIRS=exokernel
+SOURCE_SUBDIRS=sched
 
 BUILD_DIR=build
 
-export SOURCE_DIRS BUILD_DIR
+export SOURCE_SUBDIRS BUILD_DIR
 
 all: libcabbage.a
 
 libcabbage.a: 
-	$(MAKE) -f makefiles/make.gmake $@
+	$(MAKE) -f makefiles/make.gmake -I$(PWD)/makefiles/ $@ 
