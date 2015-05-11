@@ -9,8 +9,6 @@ list-sources 	=$(foreach suffix,$(SUFFIXES),$(wildcard $(1)/*$(suffix)))
 
 find-sources	=$(shell find $(1) -false $(foreach suffix,$(SUFFIXES),-o -name "*$(suffix)"))
 
-PARENT_MAKEFILE =$(word 1,$(subst $(MAKEFILES),,$(MAKEFILE_LIST)))
-
 get-objects 	=$(addsuffix .o, $(basename $(subst $(abspath $(SOURCE_DIR))/,,$(abspath $(1)))))
 
 make-include-list = $(foreach subdir,$(2),$(1)/$(subdir)/collect.gmake)
@@ -26,4 +24,7 @@ endef
 
 OBJECTS :=
 
+include $(call make-include-list,$(SOURCE_DIR),$(SOURCE_SUBDIRS))
+
+.DEFAULT_GOAL :=
 

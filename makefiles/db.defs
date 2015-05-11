@@ -1,6 +1,7 @@
 
 include $(dir $(lastword $(MAKEFILE_LIST)))/conf.defs
 
+inherit-property = $(eval DB.$(1).$(2) := $(DB.$(3).$(2)))
 
 DB.cortex-m3.cc 	:= arm-none-eabi-gcc -mcpu=cortex-m3 -march=armv7-m -mthumb
 DB.cortex-m3.as		:= arm-none-eabi-as
@@ -12,11 +13,18 @@ DB.stm32f100xx.processor 	:= cortex-m3
 DB.stm32f100xx.cppflags 	:= 
 DB.stm32f100xx.ldscripts  	:= 
 
-DB.stm32f100rb.cppflags		:= -DSTM32F100xx_VL_MD
+DB.stm32f100rb.cppflags		:= -DSTM32F100xx_MD
 DB.stm32f100rb.processor	:= $(DB.stm32f100xx.processor)
 DB.stm32f100rb.cc		:= $(DB.stm32f100xx.cc)
+DB.stm32f100rb.ld		:= arm-none-eabi-ld
+DB.stm32f100rb.ldscripts	:= $(DB.stm32f100xx.ldscripts) stm32f100xb.ld
 
 DB.stm32vldiscovery.processor 	:= $(DB.stm32f100rb.processor)
+DB.stm32vldiscovery.controller	:= stm32f100rb
 DB.stm32vldiscovery.cc		:= $(DB.$(DB.stm32vldiscovery.processor).cc)
 DB.stm32vldiscovery.as		:= $(DB.$(DB.stm32vldiscovery.processor).as)
+DB.stm32vldiscovery.ld		:= arm-none-eabi-ld
+DB.stm32vldiscovery.ar		:= arm-none-eabi-ar
+DB.stm32vldiscovery.objcopy	:= arm-none-eabi-objcopy
+$(foreach prop,ldflags ldscripts,$(call inherit-property,stm32vldiscovery,$(prop),stm32f100rb))
 

@@ -5,20 +5,23 @@ $(info OBJECTS not defined, recursing.)
 
 THIS := $(lastword $(MAKEFILE_LIST))
 
-include collect-begin.gmake
+export SOURCE_DIR
 
+$(info compile.gmake: default goal = $(.DEFAULT_GOAL))
 ifeq ($(.DEFAULT_GOAL),)
 .PHONY: dummy
 dummy:
-	$(MAKE) -f $(THIS) -I$(dir $(THIS)) MAKEFILES="collect-begin.gmake $(call make-include-list,$(SOURCE_DIR),$(SOURCE_SUBDIRS))"
+	$(MAKE) -f $(THIS) -I$(dir $(THIS)) MAKEFILES="collect-begin.gmake"
 
 else
 %:
-	$(MAKE) -f $(THIS) -I$(dir $(THIS))  $@ MAKEFILES="collect-begin.gmake $(call make-include-list,$(SOURCE_DIR),$(SOURCE_SUBDIRS))"
+	$(MAKE) -f $(THIS) -I$(dir $(THIS))  $@ MAKEFILES="collect-begin.gmake"
 endif
 
 else
 
+
+$(info compile.gmake: objects collected: $(OBJECTS))
 include db.defs macros.defs
 
 CC = $(DB.$(HW).cc)
@@ -27,6 +30,7 @@ AS = $(DB.$(HW).as)
 .DEFAULT_GOAL := all-objects
 
 #OBJECTS := $(subst $(abspath $(SOURCE_DIR))/,,$(OBJECTS))
+
 
 VPATH = $(SOURCE_DIR)
 
