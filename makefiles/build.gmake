@@ -1,0 +1,64 @@
+
+
+ifeq ($(origin OBJECTS),undefined)
+
+$(info OBJECTS not defined, recursing.)
+
+THIS := $(lastword $(MAKEFILE_LIST))
+
+include collect-begin.gmake
+include $(THIS)
+
+#ifeq (a,b)
+
+#THIS := $(lastword $(MAKEFILE_LIST))
+
+#export SOURCE_DIR
+
+#ifeq ($(.DEFAULT_GOAL),)
+#.PHONY: dummy
+#dummy:
+#	$(MAKE) -f $(THIS) -I$(dir $(THIS)) MAKEFILES="collect-begin.gmake"
+
+#else
+#%:
+#	$(MAKE) -f $(THIS) -I$(dir $(THIS))  $@ MAKEFILES="collect-begin.gmake"
+#endif
+#endif
+
+else
+
+include db.defs macros.defs
+
+CC 		= $(DB.$(HW).cc)
+AS 		= $(DB.$(HW).as)
+AR 		= $(DB.$(HW).ar)
+LD 		= $(DB.$(HW).ld)
+LDFLAGS 	= $(DB.$(HW).ldflags)
+LDSCRIPTS 	= $(DB.$(HW).ldscripts)
+
+$(OBJECTS): VPATH = $(SOURCE_DIR)
+$(OBJECTS): $(dir $(OBJECTS))
+
+CPPFLAGS += -I$(SOURCE_DIR)/include
+
+.PHONY: subdirs all-objects
+
+libcabbage.a cabbage.elf: $(OBJECTS)
+
+cabbage.bin: cabbage.elf
+
+VPATH = $(SOURCE_DIR)
+
+libcabbage.a:
+	$(AR) cr $@ $^
+
+cabbage.elf:
+	$(LD) $(LDFLAGS)  -L$(TOP_DIR)/lib -L$(TOP_DIR)/lib/ldscripts $(foreach script,$(LDSCRIPTS),-T$(script))  --print-map -Map=cabbage.map -o $@ $^ 
+
+$(OBJECTS): subdirs
+
+subdirs:
+	mkdir -p $(dir $(OBJECTS))
+
+endif #ifndef OBJECTS

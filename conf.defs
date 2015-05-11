@@ -1,0 +1,6 @@
+
+HW	= stm32vldiscovery
+
+PERIPH	= gpio
+
+
