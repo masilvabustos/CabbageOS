@@ -1,11 +1,11 @@
 
 #include "isr.h"
 
-extern int _initial_sp;
+extern int __end_of_ram;
 extern void _start();
 
 __attribute__ ((section(".isr_vector"))) isr_t isr_vector[] = {
-	(isr_t) &_initial_sp,
+	(isr_t) &__end_of_ram,
 	_start
 };
 	
