@@ -49,4 +49,12 @@ union gpio_lckr_u {
 	bita8_t lckr_bita[4];
 };
 
+extern union gpio_cr_u		GPIOA_CRL;
+extern union gpio_cr_u		GPIOA_CRH;
+extern union gpio_idr_u		GPIOA_IDR;
+extern union gpio_odr_u		GPIOA_ODR;
+extern union gpio_bsrr_u	GPIOA_BSSR;
+extern union gpio_brr_u		GPIOA_BRR;
+extern union gpio_lckr_u	GPIOA_LCKR;
+
 #endif
