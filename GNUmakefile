@@ -1,11 +1,13 @@
 
-SOURCE_SUBDIRS=sched periph/stm32f100xx/
+TOP_DIR		:=$(PWD)
 
-BUILD_DIR=build
+SOURCE_DIR	:=$(PWD)
 
-export SOURCE_SUBDIRS BUILD_DIR
+BUILD_DIR	=build
 
-all: libcabbage.a
+export TOP_DIR SOURCE_DIR BUILD_DIR
+
+.DEFAULT_GOAL := cabbage.elf
 
 .DEFAULT: 
 	$(MAKE) -f makefiles/make.gmake -I$(PWD)/makefiles/ $@ 

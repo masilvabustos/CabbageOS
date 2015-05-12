@@ -1,34 +1,43 @@
 
 
+include conf.defs db.defs
+
+SOURCE_SUBDIRS=kernel
+
 ifeq ($(origin OBJECTS),undefined)
 
 $(info OBJECTS not defined, recursing.)
 
 THIS := $(lastword $(MAKEFILE_LIST))
 
-include collect-begin.gmake
-include $(THIS)
 
-#ifeq (a,b)
+include last-makefile.defs
 
-#THIS := $(lastword $(MAKEFILE_LIST))
+SUFFIXES=.c .s .S .cxx
 
-#export SOURCE_DIR
+list-sources 		=$(foreach suffix,$(SUFFIXES),$(wildcard $(1)/*$(suffix)))
 
-#ifeq ($(.DEFAULT_GOAL),)
-#.PHONY: dummy
-#dummy:
-#	$(MAKE) -f $(THIS) -I$(dir $(THIS)) MAKEFILES="collect-begin.gmake"
+find-sources		=$(shell find $(1) -false $(foreach suffix,$(SUFFIXES),-o -name "*$(suffix)"))
 
-#else
-#%:
-#	$(MAKE) -f $(THIS) -I$(dir $(THIS))  $@ MAKEFILES="collect-begin.gmake"
-#endif
-#endif
+sources-to-objects 	=$(addsuffix .o, $(basename $(subst $(abspath $(SOURCE_DIR))/,,$(abspath $(1)))))
 
-else
+make-include-list 	=$(foreach subdir,$(2),$(1)/$(subdir)/Build.gmake)
 
-include db.defs macros.defs
+$(SOURCE_DIR)/%/Build.gmake:
+	echo '### AUTOMATICALY GENERATED ###' > $@
+	echo 'DIRS 	+= $$(dirs $$(call find-sources,$(dir $@)))' >>$@
+	echo 'OBJECTS 	+= $$(call sources-to-objects,$$(call find-sources,$(dir $@)))' >> $@
+
+OBJECTS :=
+
+include $(call make-include-list,$(SOURCE_DIR),$(SOURCE_SUBDIRS))
+
+#include $(THIS)
+
+.DEFAULT_GOAL :=
+
+endif
+
 
 CC 		= $(DB.$(HW).cc)
 AS 		= $(DB.$(HW).as)
@@ -37,28 +46,26 @@ LD 		= $(DB.$(HW).ld)
 LDFLAGS 	= $(DB.$(HW).ldflags)
 LDSCRIPTS 	= $(DB.$(HW).ldscripts)
 
-$(OBJECTS): VPATH = $(SOURCE_DIR)
-$(OBJECTS): $(dir $(OBJECTS))
+#$(OBJECTS): VPATH = $(SOURCE_DIR)
 
 CPPFLAGS += -I$(SOURCE_DIR)/include
 
-.PHONY: subdirs all-objects
+.PHONY:
 
 libcabbage.a cabbage.elf: $(OBJECTS)
 
 cabbage.bin: cabbage.elf
-
+ 
 VPATH = $(SOURCE_DIR)
 
 libcabbage.a:
 	$(AR) cr $@ $^
 
 cabbage.elf:
-	$(LD) $(LDFLAGS)  -L$(TOP_DIR)/lib -L$(TOP_DIR)/lib/ldscripts $(foreach script,$(LDSCRIPTS),-T$(script))  --print-map -Map=cabbage.map -o $@ $^ 
+	$(LD) $(LDFLAGS)  -L$(SOURCE_DIR)/lib -L$(SOURCE_DIR)/lib/ldscripts $(foreach script,$(LDSCRIPTS),-T$(script))  --print-map -Map=cabbage.map -o $@ $^
 
-$(OBJECTS): subdirs
+$(OBJECTS): | build-tree
 
-subdirs:
-	mkdir -p $(dir $(OBJECTS))
+build-tree:
+	mkdir -p $(DIRS)
 
-endif #ifndef OBJECTS
