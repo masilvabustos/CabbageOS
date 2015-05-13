@@ -1,18 +1,19 @@
 
-__early_init:
+__early_setup:
 	bx lr
-	.size __early_init, . - __early_init
-	.type __early_init STT_FUNC
-	.weak __early_init
+	.size __early_setup, . - __early_setup
+	.type __early_setup STT_FUNC
+	.weak __early_setup
 
 Reset:
-	bl __early_init
-	bl _kstart
+	bl __early_setup
+	bl kernel_init
 	b Reset
-	.globl _kstart
+	.globl kernel_init
 	.globl Reset
 	.size Reset,.-Reset
 	.type Reset STT_FUNC
+	.weak Reset
 
 NMI_Handler:
 HardFault_Handler:
