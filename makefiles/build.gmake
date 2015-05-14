@@ -6,11 +6,6 @@ SOURCE_SUBDIRS=kernel
 
 ifeq ($(origin OBJECTS),undefined)
 
-$(info OBJECTS not defined, recursing.)
-
-THIS := $(lastword $(MAKEFILE_LIST))
-
-
 include last-makefile.defs
 
 SUFFIXES=.c .s .S .cxx
@@ -23,7 +18,7 @@ sources-to-objects 	=$(addsuffix .o, $(basename $(subst $(abspath $(SOURCE_DIR))
 
 make-include-list 	=$(foreach subdir,$(2),$(1)/$(subdir)/Build.gmake)
 
-$(SOURCE_DIR)/%/Build.gmake:
+%/Build.gmake:
 	echo '### AUTOMATICALY GENERATED ###' > $@
 	echo 'DIRS 	+= $$(dirs $$(call find-sources,$(dir $@)))' >>$@
 	echo 'OBJECTS 	+= $$(call sources-to-objects,$$(call find-sources,$(dir $@)))' >> $@
@@ -31,8 +26,6 @@ $(SOURCE_DIR)/%/Build.gmake:
 OBJECTS :=
 
 include $(call make-include-list,$(SOURCE_DIR),$(SOURCE_SUBDIRS))
-
-#include $(THIS)
 
 .DEFAULT_GOAL :=
 
@@ -49,6 +42,9 @@ LDSCRIPTS 	= $(DB.$(HW).ldscripts)
 #$(OBJECTS): VPATH = $(SOURCE_DIR)
 
 CPPFLAGS += -I$(SOURCE_DIR)/include
+CPPFLAGS += -I$(SOURCE_DIR)/periph
+
+CFLAGS += -g
 
 .PHONY:
 
