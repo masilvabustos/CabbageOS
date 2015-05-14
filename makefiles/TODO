@@ -1,0 +1,7 @@
+
+* 'Build.gmake' files are overwritten when -B is used.
+	- Automatic 'Build.gmake's should not be in SOURCE_DIR but
+	  int BUILD_DIR
+
+* Add Kconfig compatibility.
+
