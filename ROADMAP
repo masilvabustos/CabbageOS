@@ -1,0 +1,7 @@
+
+* Implement the signal generation and delivery, which will serve as
+  an abstraction layer for the core interrupts and events.
+
+* Tasks structures and utilites functions.
+
+* Implement a task switcher.
