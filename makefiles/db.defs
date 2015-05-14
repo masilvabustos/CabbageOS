@@ -4,7 +4,7 @@ include $(dir $(lastword $(MAKEFILE_LIST)))/conf.defs
 inherit-property = $(eval DB.$(1).$(2) := $(DB.$(3).$(2)))
 
 DB.cortex-m3.cc 	:= arm-none-eabi-gcc -mcpu=cortex-m3 -march=armv7-m -mthumb
-DB.cortex-m3.as		:= arm-none-eabi-as
+DB.cortex-m3.as		:= arm-none-eabi-as -mcpu=cortex-m3 -march=armv7-m -mthumb -mfpu=softfpa
 DB.cortex-m3.ld 	:= arm-none-eabi-ld
 DB.cortex-m3.ldscripts 	:=
 
