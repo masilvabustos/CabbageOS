@@ -1,5 +1,6 @@
 
-OBJECTS += $(call get-objects,$(call list-sources,$(LAST_MAKEFILE_DIR)))
+OBJECTS += $(call sources-to-objects,$(call list-sources,$(LAST_MAKEFILE_DIR)))
+DIRS += $(LAST_MAKEFILE_DIR)
 
 include $(call make-include-list,$(LAST_MAKEFILE_DIR),$(DB.$(HW).processor))
 
