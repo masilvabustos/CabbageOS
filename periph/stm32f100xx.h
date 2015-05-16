@@ -2,6 +2,8 @@
 #ifndef __stm32f100xx_h_INCLUDED__
 #define __stm32f100xx_h_INCLUDED__
 
+#include <stdint.h>
+
 #define GPIO_MODE_INPUT 	00 << 0
 #define GPIO_MODE_OUTPUT_10MHz 	01 << 0
 #define GPIO_MODE_OUTPUT_2MHz 	02 << 0
@@ -23,10 +25,10 @@ extern uint32_t	GPIOA_LCKR;
 
 extern uint32_t	GPIOC_CRL;
 extern uint32_t	GPIOC_CRH;
-extern uint32_t	GPIOC_IDR;
-extern uint32_t	GPIOC_ODR;
+extern uint16_t	GPIOC_IDR;
+extern uint16_t	GPIOC_ODR;
 extern uint32_t	GPIOC_BSSR;
-extern uint32_t	GPIOC_BRR;
+extern uint16_t	GPIOC_BRR;
 extern uint32_t	GPIOC_LCKR;
 
 extern uint32_t RCC_CR		;
