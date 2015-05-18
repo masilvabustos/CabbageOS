@@ -1,5 +1,0 @@
-
-void exokernel_main()
-{
-}
-
