@@ -1,10 +1,10 @@
 
 SECTIONS {
 	
-	__end_of_ram = ALIGN(ORIGIN(SRAM) + LENGTH(SRAM), 4) ;
+	__end_of_ram__ = ALIGN(ORIGIN(SRAM) + LENGTH(SRAM), 4) ;
 
 	.cm3.isr_vector ORIGIN(FLASH) : {
-		LONG(__end_of_ram)
+		LONG(__end_of_ram__)
 		/* ARM Thumb interwork requires the LSB to be set.	*
 		 * (Can ld do this automatically?) 			*/ 			
 		LONG(Reset 		| 1)
