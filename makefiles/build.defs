@@ -1,0 +1,11 @@
+
+include $(dir $(lastword $(MAKEFILE_LIST)))/db.defs
+
+CC 		= $(DB.$(HW).cc)
+AS 		= $(DB.$(HW).as)
+AR 		= $(DB.$(HW).ar)
+LD 		= $(DB.$(HW).ld)
+LDFLAGS 	= $(DB.$(HW).ldflags)
+LDSCRIPTS 	= $(DB.$(HW).ldscripts)
+
+
