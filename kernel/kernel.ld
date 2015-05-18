@@ -1,8 +1,8 @@
 
 SECTIONS {
 		
-	.text : { . = ALIGN(4) ; * (.text) }
-	.data : { __data_start = . ; * (.data) __data_end = . ; }
-	.bss : { __bss_start = . ; * (.bss) * (COMMON) __bss_end = . ; }
+	.text : { _ktext_start = . ; * (.text) _ktext_end = . ; }
+	.data : { _kdata_start = . ; * (.data) _kdata_end = . ; }
+	.bss : { _kbss_start = . ; * (.bss) * (COMMON) _kbss_end = . ; }
 }
 

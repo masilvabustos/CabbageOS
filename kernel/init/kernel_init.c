@@ -1,27 +1,20 @@
 
 #include <stdint.h>
-
-void kernel_init(void);
+#include <task.h>
 
 void kernel_init()
 {
-	extern uint8_t __init_data_start, __init_data_end, __data_start, __bss_start, __bss_end;
-	uint32_t cr, mask, set_mask, reset_mask, conf;
-	register void* sp asm ("sp");
+	extern uint8_t __data_lma__, __data_vma__, _kdata_start, _kdata_end, _kbss_start, _kbss_end;
 
 	uint8_t *src, *dst;
 
-	src = &__init_data_start;
-	dst = &__data_start;
-	while(src != &__init_data_end)
+	src = &__data_lma__ + (&_kdata_start - &__data_vma__) ;
+	dst = &_kdata_start;
+	while(dst <= &_kdata_end)
 		*dst++ = *src++;
 
-	for (dst = &__bss_start; dst != &__bss_end; ++dst)
+	for (dst = &_kbss_start; dst != &_kbss_end; ++dst)
 		*dst = 0;
-
-	main();
-
-	while(1);
 
 }
 

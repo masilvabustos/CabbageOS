@@ -32,8 +32,9 @@ SECTIONS {
 		* (.text) 
 	} > FLASH
 	
-	__init_data_start = . ;
-	.data : AT(__init_data_start) { 
+	__data_lma__ = . ;
+	.data : AT(__data_lma__) { 
+		__data_vma__ = . ;
 		* (.data) 
 	} > SRAM
 	__init_data_end = . ;
