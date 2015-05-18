@@ -1,9 +1,10 @@
 
 #include <stm32vldiscovery.h>
 
+void kernel_init();
+
 int main()
 {
-	STM32VLDiscovery_LEDON(STM32VLDiscovery_GREEN_LED);
 
 	return 0;
 }
