@@ -1,3 +1,3 @@
 
-INCLUDE stm32f100rb.ld
+INCLUDE stm32f100xb.ld
 
