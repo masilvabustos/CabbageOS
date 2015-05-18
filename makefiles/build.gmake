@@ -1,6 +1,6 @@
 
 
-include conf.defs db.defs
+include conf.defs db.defs build.defs
 
 SOURCE_SUBDIRS=kernel lib
 
@@ -34,14 +34,6 @@ include $(call make-include-list,$(SOURCE_DIR),$(SOURCE_SUBDIRS))
 
 endif
 
-
-CC 		= $(DB.$(HW).cc)
-AS 		= $(DB.$(HW).as)
-AR 		= $(DB.$(HW).ar)
-LD 		= $(DB.$(HW).ld)
-LDFLAGS 	= $(DB.$(HW).ldflags)
-LDSCRIPTS 	= $(DB.$(HW).ldscripts)
-
 #$(OBJECTS): VPATH = $(SOURCE_DIR)
 
 CPPFLAGS += -I$(SOURCE_DIR)/include
@@ -51,17 +43,16 @@ CFLAGS += -g
 
 .PHONY:
 
-libcabbage.a cabbage.elf: $(OBJECTS)
-
 cabbage.bin: cabbage.elf
  
 VPATH = $(SOURCE_DIR)
+
 
 libcabbage.a:
 	$(AR) cr $@ $^
 
 cabbage.elf:
-	$(LD) $(LDFLAGS)  -L$(SOURCE_DIR)/lib -L$(SOURCE_DIR)/lib/ldscripts $(foreach script,$(LDSCRIPTS),-T$(script))  --print-map -Map=cabbage.map -o $@ $^
+	$(LD) $(LDFLAGS)  -L$(BUILD_DIR)/lib -L$(SOURCE_DIR)/lib/ldscripts $(foreach script,$(LDSCRIPTS),-T$(script))  --print-map -Map=cabbage.map -o $@ $^
 
 $(OBJECTS): | build-tree
 
