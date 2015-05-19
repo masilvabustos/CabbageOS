@@ -2,6 +2,7 @@
 void Reset(void)
 {
 	kernel_init();
+	_start()
 }
 
 void Default_Handler(void)
