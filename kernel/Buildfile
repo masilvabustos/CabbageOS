@@ -1,13 +1,14 @@
 
 DIRS += kernel/sched kernel/init kernel/sched/$(DB.$(HW).processor)/
 
+vpath startup.s $(SOURCE_DIR)/hw/$(HW)/
+
 kernel/kernel.o: $(foreach subdir,. sched sched/$(DB.$(HW).processor) init,$(call sources-to-objects,$(call list-sources, $(LAST_MAKEFILE_DIR)/$(subdir))))
 
 kernel/kernel.o:
-	$(LD) -T$(SOURCE_DIR)/kernel/kernel.ld -i -o $@ $^
+	$(LD) -T$(SOURCE_DIR)/kernel/kernel.ld --relocatable -o $@ $^
 
 kernel/kernel_s.o: kernel/kernel.o
 	$(OBJCOPY) --strip-all $^ $@
 
-cabbage.elf libcabbage.a: kernel/kernel.o
 
