@@ -19,10 +19,11 @@ SECTIONS {
 		. = 0x38 ; /* Reserved */
 		LONG(PendSV_Handler	| 1)
 		LONG(SysTick_Handler	| 1)
-
-		* (.isr_vector) /* IRQs */
 		
-		. = 0x150 ; /* Max. vector size? */
+		. = 0x40 ;
+		* (.isr_vector)
+		
+		. = 0x134 ;
 
 	} > FLASH
 
