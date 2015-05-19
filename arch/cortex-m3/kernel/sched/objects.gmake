@@ -1,3 +1,0 @@
-
-OBJECTS += $(call get-objects,$(LAST_MAKEFILE_DIR))
-
