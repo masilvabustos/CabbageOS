@@ -1,14 +1,15 @@
 
-DIRS += kernel/sched kernel/init kernel/sched/$(DB.$(HW).processor)/
+DIRS += kernel/sched kernel/init
 
-vpath startup.s $(SOURCE_DIR)/hw/$(HW)/
+vpath kernel/%.s $(ARCH_DIR)
+vpath kernel/%.c $(SOURCE_DIR) $(ARCH_DIR)
 
-kernel/kernel.o: $(foreach subdir,. sched sched/$(DB.$(HW).processor) init,$(call sources-to-objects,$(call list-sources, $(LAST_MAKEFILE_DIR)/$(subdir))))
+kernel.o: $(foreach subdir,. sched init,$(call sources-to-objects,$(call srcdir_relpath,$(call list-sources, $(SOURCE_DIR)/kernel/$(subdir))) $(call archdir_relpath,$(call list-sources,$(ARCH_DIR)/kernel/$(subdir)) $(call list-sources,$(ARCH_DIR)/kernel/asm))))
 
-kernel/kernel.o:
+kernel.o:
 	$(LD) -T$(SOURCE_DIR)/kernel/kernel.ld --relocatable -o $@ $^
 
-kernel/kernel_s.o: kernel/kernel.o
-	$(OBJCOPY) --strip-all $^ $@
+kernel_s.o: kernel.o
+	$(OBJCOPY) --strip-unneeded $^ $@
 
 
