@@ -3,5 +3,7 @@
 #define __SYSCALLS_H_INCLUDED__
 
 #define SYS_LAUNCHPAD 1
+#define SYS_SCHED_YIELD 2
+#define SYS_TASKSWITCH 3
 
 #endif
