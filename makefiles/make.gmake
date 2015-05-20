@@ -1,10 +1,10 @@
 
 export TOP_DIR SOURCE_DIR
 
-libcabbage.a kernel/kernel.o: $(BUILD_DIR) 
+libcabbage.a kernel.o: $(BUILD_DIR) 
 	$(MAKE) -C $(BUILD_DIR) -f $(PWD)/makefiles/build.gmake -I$(PWD)/makefiles/ -I$(SOURCE_DIR) build-tree $@
 	ln -sf $(abspath $(BUILD_DIR))/libcabbage.a lib/libcabbage.a
-	ln -sf $(abspath $(BUILD_DIR))/kernel/kernel.o lib/kernel.o
+	ln -sf $(abspath $(BUILD_DIR))/kernel.o lib/kernel.o
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)

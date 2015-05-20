@@ -1,0 +1,23 @@
+
+
+CABBAGE_DIR:=$(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+
+include $(CABBAGE_DIR)/makefiles/db.defs
+
+ARCH=$(DB.$(HW).arch)
+ARCH_DIR=$(CABBAGE_DIR)/arch/$(ARCH)/
+
+CPPFLAGS=-I$(CABBAGE_DIR)/include -I$(ARCH_DIR)/include -I$(CABBAGE_DIR)/hw
+
+LDFLAGS=-L$(CABBAGE_DIR)/lib -L$(CABBAGE_DIR)/lib/ldscripts -L$(CABBAGE_DIR)/hw
+
+CC 		= $(DB.$(HW).cc)
+AS 		= $(DB.$(HW).as)
+AR 		= $(DB.$(HW).ar)
+LD 		= $(DB.$(HW).ld)
+LDFLAGS 	+= $(DB.$(HW).ldflags)
+LDSCRIPTS 	+= $(DB.$(HW).ldscripts)
+
+
+
+

@@ -1,6 +1,6 @@
 
 
-include conf.defs db.defs build.defs
+include conf.defs db.defs ../build.defs
 
 SOURCE_SUBDIRS=kernel lib
 
@@ -14,39 +14,39 @@ list-sources 		=$(foreach suffix,$(SUFFIXES),$(wildcard $(1)/*$(suffix)))
 
 find-sources		=$(shell find $(1) -false $(foreach suffix,$(SUFFIXES),-o -name "*$(suffix)"))
 
-srcdir_relpath		=$(subst $(abspath $(SOURCE_DIR))/,,$(abspath $(1)))
+relpath			=$(subst $(abspath $(1))/,,$(abspath $(2)))
 
-sources-to-objects 	=$(addsuffix .o, $(basename $(call srcdir_relpath,$(1))))
+srcdir-relpath		=$(call relpath,$(SOURCE_DIR),$(1))
 
-make-include-list 	=$(foreach subdir,$(2),$(call srcdir_relpath,$(1)/$(subdir)/Buildfile))
+archdir-relpath		=$(call relpath,$(ARCH_DIR),$(1))
 
-%/Buildfile:
-	mkdir -p $*
-	echo '### AUTOMATICALY GENERATED ###' > $@
-	echo 'DIRS 	+= $$(dirs $$(call find-sources,$(SOURCE_DIR)/$(dir $@)))' >>$@
-	echo 'OBJECTS 	+= $$(call sources-to-objects,$$(call find-sources,$(SOURCE_DIR)/$(dir $@)))' >> $@
+sources-to-objects 	=$(addsuffix .o, $(basename $(1)))
+
+make-include-list 	=$(foreach subdir,$(2),$(call srcdir-relpath,$(1)/$(subdir)/Buildfile))
+
+#%/Buildfile:
+#	mkdir -p $*
+#	echo '### AUTOMATICALY GENERATED ###' > $@
+#	echo 'DIRS 	+= $$(dirs $$(call find-sources,$(SOURCE_DIR)/$(dir $@)))' >>$@
+#	echo 'OBJECTS 	+= $$(call sources-to-objects,$$(call find-sources,$(SOURCE_DIR)/$(dir $@)))' >> $@
 
 OBJECTS :=
 
 include $(call make-include-list,$(SOURCE_DIR),$(SOURCE_SUBDIRS))
 
-.DEFAULT_GOAL :=
+.DEFAULT_GOAL := all
 
 endif
 
-#$(OBJECTS): VPATH = $(SOURCE_DIR)
-
-CPPFLAGS += -I$(SOURCE_DIR)/include
-CPPFLAGS += -I$(SOURCE_DIR)/periph
 
 CFLAGS += -g
 
 .PHONY:
 
-cabbage.bin: cabbage.elf
  
 VPATH = $(SOURCE_DIR)
 
+all: libcabbage.a kernel.o
 
 libcabbage.a:
 	$(AR) cr $@ $^
