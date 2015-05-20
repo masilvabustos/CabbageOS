@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 #include "up.h"
-#include <syscalls.h>
+#include <syscall.h>
 
 struct pdgm_launchpad {
 	uint16_t lp_trampoline[2];

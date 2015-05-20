@@ -1,8 +1,11 @@
 
+extern void kernel_init(void);
+extern void _start(void);
+
 void Reset(void)
 {
 	kernel_init();
-	_start()
+	_start();
 }
 
 void Default_Handler(void)

@@ -7,9 +7,8 @@
 #include <signal.h>
 
 union mcontext {
-	struct mc_s {
+	struct mc_s{
 
-		int* 	sp;
 		int 	r4;
 		int 	r5;
 		int 	r6;
@@ -27,13 +26,13 @@ union mcontext {
 		short* 	lr;
 		short* 	pc;
 		int 	xpsr;
-	} mc_s;
-	int mc_v[sizeof(struct mc_s)/sizeof(int)];
+	} s;
+	int a[sizeof(struct mc_s)/sizeof(int)];
 };
 
 #define MC_OFF(r) offsetof(union mcontext, mc_s.r)
 
-typedef union mcontext* mcontext_t;
+typedef union mcontext mcontext_t;
 
 #define __unused __attribute__ ((unused))
 
@@ -97,13 +96,36 @@ struct ucontext {
 
 typedef struct ucontext ucontext_t;
 
-#if 0
-int getcontext(ucontext_t *ucp)
-{
-	ucp->uc_stack.ss_sp 	= __uc_current_stack.ss_sp;
-	ucp->uc_stack.ss_size 	= __uc_current_stack.ss_size;
-	__ucp->
+#if 1
 
+static void __attribute__ ((naked)) __save_mcontext(int* p)
+{
+	register int* r1 asm("r1");
+	register int  lr asm("lr");
+	//register int* r0 asm ("r0");
+
+	__stm_wb(ia,p,"{r4-r11}");
+	//r0 = p;
+	__stm(ia,p,"{r0-r3,r12,lr}");
+	asm volatile ("add %0,%0,#24" : "+r"(p));
+	__str_post(lr,p,4);
+	__mrs(r1,apsr);
+	__str_i(r1,p,0);
+	asm volatile ("bx lr");
+}
+
+static int __attribute__ ((naked)) getcontext(ucontext_t *ucp)
+{
+	extern stack_t _uc_current_stack;
+	register int* sp asm("sp");
+	ucp->uc_stack.ss_sp 	= (void*)sp;
+	ucp->uc_stack.ss_size 	= _uc_current_stack.ss_sp - (void*)sp;
+	__save_mcontext(&ucp->uc_mcontext.a[0]);
+}
+
+#endif
+
+#if 0
 
 int setcontext(ucontext_t *ucp)
 {

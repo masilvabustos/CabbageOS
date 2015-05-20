@@ -2,6 +2,8 @@
 #ifndef __signal_h_INCLUDED__
 #define __signal_h_INCLUDED__
 
+#include <stddef.h>
+
 struct sig_stack {
 
 	void* ss_sp;
