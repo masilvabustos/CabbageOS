@@ -15,6 +15,7 @@ CC 		= $(DB.$(HW).cc)
 AS 		= $(DB.$(HW).as)
 AR 		= $(DB.$(HW).ar)
 LD 		= $(DB.$(HW).ld)
+OBJCOPY		= $(DB.$(HW).objcopy)
 LDFLAGS 	+= $(DB.$(HW).ldflags)
 LDSCRIPTS 	+= $(DB.$(HW).ldscripts)
 
