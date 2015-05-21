@@ -4,7 +4,7 @@ DIRS += kernel/sched kernel/init
 vpath kernel/%.s $(ARCH_DIR)
 vpath kernel/%.c $(SOURCE_DIR) $(ARCH_DIR)
 
-kernel.o: $(foreach subdir,. sched init,$(call sources-to-objects,$(call srcdir_relpath,$(call list-sources, $(SOURCE_DIR)/kernel/$(subdir))) $(call archdir_relpath,$(call list-sources,$(ARCH_DIR)/kernel/$(subdir)) $(call list-sources,$(ARCH_DIR)/kernel/asm))))
+kernel.o: $(foreach subdir,. sched init,$(call sources-to-objects,$(call srcdir-relpath,$(call list-sources, $(SOURCE_DIR)/kernel/$(subdir))) $(call archdir-relpath,$(call list-sources,$(ARCH_DIR)/kernel/$(subdir)) $(call list-sources,$(ARCH_DIR)/kernel/asm))))
 
 kernel.o:
 	$(LD) -T$(SOURCE_DIR)/kernel/kernel.ld --relocatable -o $@ $^
