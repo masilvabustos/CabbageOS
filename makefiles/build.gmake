@@ -22,6 +22,8 @@ archdir-relpath		=$(call relpath,$(ARCH_DIR),$(1))
 
 sources-to-objects 	=$(addsuffix .o, $(basename $(1)))
 
+std-dir			=$(foreach subdir,$(2),$(call sources-to-objects,$(call srcdir-relpath,$(call list-sources,$(SOURCE_DIR)/$(1)/$(subdir))) $(call archdir-relpath,$(call list-sources,$(ARCH_DIR)/$(1)/) $(subst asm/$(1)/,$(1)/asm/,$(call list-sources,$(ARCH_DIR)/asm/$(1)/$(subdir))))) $(eval build-tree: DIRS+=$(1)/$(subdir) $(1)/asm/$(subdir))) $(eval $(1)/asm/%.o: $(ARCH_DIR)/asm/$(1)/%.s ; $(AS) $(ASFLAGS) -o $$@ $$<)
+
 make-include-list 	=$(foreach subdir,$(2),$(call srcdir-relpath,$(1)/$(subdir)/Buildfile))
 
 #%/Buildfile:
@@ -38,12 +40,10 @@ include $(call make-include-list,$(SOURCE_DIR),$(SOURCE_SUBDIRS))
 
 endif
 
-
 CFLAGS += -g
 
 .PHONY:
 
- 
 VPATH = $(SOURCE_DIR)
 
 all: libcabbage.a kernel.o
