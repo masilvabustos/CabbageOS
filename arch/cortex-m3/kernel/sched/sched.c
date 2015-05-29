@@ -60,15 +60,21 @@ void do_task_switch()
 
 void restore_context()
 {
-	
-	struct cabb_task *task;
+}
 
-	task = sp + (offsetof(struct cabb_task, t_ucontext.uc_mcontext.mc_s.r4));
+#define __naked__ __attribute__ ((naked))
+struct task_state {
+
+	struct cabb_task task;
+};
+
+struct task_state current_task;
+
+
+int __attribute__ ((naked)) cabb_dispatch(struct cabb_task *tp)
+{
+	register int* sp asm ("sp");
 
 	
-	sp = ready->t_ucontext.uc_stack.ss_sp;
-	for(p =  )
-		*sp-- = *p--
-	restore_mcontext(ready->t_ucontext.uc_mcontext);
 }
 
