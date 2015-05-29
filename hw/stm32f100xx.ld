@@ -1,4 +1,6 @@
 
+INPUT(hw.o)
+
 SECTIONS {
 	
 	__end_of_ram__ = ALIGN(ORIGIN(SRAM) + LENGTH(SRAM), 4) ;
@@ -7,21 +9,29 @@ SECTIONS {
 		LONG(__end_of_ram__)
 		/* ARM Thumb interwork requires the LSB to be set.	*
 		 * (Can ld do this automatically?) 			*/ 			
-		LONG(Reset 		| 1)
+		LONG(_start 		| 1)
+		/*PROVIDE(Default_Handler		= _start);*/
+		PROVIDE(NMI_Handler 		= Default_Handler);
+		PROVIDE(HardFault_Handler 	= Default_Handler);
+ 		PROVIDE(MemManage_Handler 	= Default_Handler);
+		PROVIDE(BusFault_Handler 	= Default_Handler);
+		PROVIDE(SVC_Handler		= Default_Handler);
+		PROVIDE(PendSV_Handler 		= Default_Handler);
+		PROVIDE(SysTick_Handler 	= Default_Handler);
 		LONG(NMI_Handler 	| 1)
 		LONG(HardFault_Handler 	| 1)
 		LONG(MemManage_Handler 	| 1)
 		LONG(BusFault_Handler 	| 1)
-		LONG(UsageFault_Handler | 1)
+		/*LONG(UsageFault_Handler | 1)*/
 		. = 0x2c ; /* Reserved */
 		LONG(SVC_Handler 	| 1)
-		LONG(DebugMon_Handler	| 1)
+		/*LONG(DebugMon_Handler	| 1)*/
 		. = 0x38 ; /* Reserved */
 		LONG(PendSV_Handler	| 1)
 		LONG(SysTick_Handler	| 1)
 		
 		. = 0x40 ;
-		* (.isr_vector)
+		* (.irqsr_vector)
 		
 		. = 0x134 ;
 
