@@ -1,5 +1,6 @@
 
-INPUT(hw.o)
+
+ASSERT(DEFINED(Default_Handler), "Default_Handler not defined!")
 
 SECTIONS {
 	
@@ -10,7 +11,7 @@ SECTIONS {
 		/* ARM Thumb interwork requires the LSB to be set.	*
 		 * (Can ld do this automatically?) 			*/ 			
 		LONG(_start 		| 1)
-		/*PROVIDE(Default_Handler		= _start);*/
+		PROVIDE(Default_Handler		= _start);
 		PROVIDE(NMI_Handler 		= Default_Handler);
 		PROVIDE(HardFault_Handler 	= Default_Handler);
  		PROVIDE(MemManage_Handler 	= Default_Handler);
