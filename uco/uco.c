@@ -7,52 +7,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>
-
-struct _decision_queue {
-	int first;
-	int *next;
-};
-
-int __queue_and_peek(int *q, int x, int link[])
-{
-	int prev;
-
-	link[x] = -1;
-
-	while((prev = __sync_val_compare_and_swap(q, -1, x)) != -1)
-		q = & link[prev];
-
-	return *q;
-}
-
-
-void __free_dq(int q, int link[], int reserved[])
-{
-	if (q == -1)
-		return;
-
-	__free_dq(link[q], link, reserved);
-
-	__release_state_object(reserved, q);
-}
-
-/** Find  and aquiere a state object */
-
-int uco_find_free_state_object(int held_map[], int begin, int end)
-{
-	while(begin < end && held_map[begin] == 1)
-		++begin;
-
-	held_map[begin] = 1;
-	return begin;
-}
-
-void __free_state_object(int held_map[], int n)
-{
-	held_map[n] = 0;
-}
-
-
+#include <assert.h>
 
 typedef unsigned int 	uco_seq_t;
 typedef int 		uco_cell_ref_t;
@@ -66,21 +21,24 @@ struct uco_threading_state {
 
 struct uco {
 	unsigned consensus_number; /**<< consensus number */
-	void* full_state; /**<< Object full state. This includes all state transitions, even discarded ones. */
-	int (*do_invocation)(int,int*,int,void*);
+	int (*do_invocation)(int,int,int);
 	struct uco_threading_state threading_state[];
 };
 
 /** The universal consensus object cell */
 
 struct uco_cell {
-	long int 	  	 seq;   /**< Sequence number for operation ordering */
-	int                      state; /**< The object state at the cell operation */
-	int                      after; /**< A link to the next cell */
+	long int      seq;   /**< Sequence number for operation ordering */
 
-	unsigned int            count;   /**< Reference count */
-        int      		before; /** A link for garbage collecting */
+	int           after; /**< A link to the next cell */
+
+	unsigned int  count;   /**< Reference count */
+        int           before; /** A link for garbage collecting */
+
+	int          state; 
 };
+
+#define UCO_INITIAL_CELL (struct uco_cell) {.seq = 1, .after = -1, .count = -1, .before = 0, .state = 0}
 
 /** UCO initialization */
 
@@ -89,9 +47,9 @@ struct uco_cell {
 struct uco_cell* uco_initialize_cell(struct uco_cell* cell, int n)
 {
 	cell -> seq    = 0;
-	cell -> after  = 0;
-	cell -> before = 0;
-	cell -> state  = 0;
+	cell -> after  = -1;
+	cell -> before = -1;
+	cell -> state  = -1;
 	cell -> count  = n + 1;
 	
 	return cell;
@@ -107,64 +65,45 @@ struct uco_cell* uco_initialize_cell(struct uco_cell* cell, int n)
 int uco_cell_decide_after(struct uco_cell* cell, int prefer)
 {
 	int ret;
-	ret = __sync_val_compare_and_swap(&cell->after, 0, prefer);
-	return (ret == 0) ? prefer : ret;
+	ret = __sync_val_compare_and_swap(&cell->after, -1, prefer);
+	return (ret == -1) ? prefer : ret;
 }
 
-struct _decision_queue* uco_cell_decide_state(struct uco_cell* cell, struct _decision_queue *prefer)
+int uco_cell_decide_state(struct uco_cell* cell, int prefer)
 {
-	return __queue_and_peek(&cell->state, prefer->first, prefer->next);
+	__sync_val_compare_and_swap(&cell->state, -1, prefer);
+	return cell->state;
 }
 
 int uco_cell_decrement_counter(struct uco_cell* cell)
 {
-	return __fetch_and_add(&cell->count, -1);
+	return __sync_fetch_and_add(&cell->count, -1);
 }
 
 #if 1
 void uco_release_cells(int head, int n, struct uco_cell cell_pool[])
 {
 	struct uco_cell *cell = & cell_pool[cell_pool[head].before];
-
-#ifdef DEBUG
-	printf("release begin: [%lx] %d\n", pthread_self(), head);
-#endif
-
-	do {
-		
-		struct uco_cell *before = & cell_pool[cell -> before];
-		int count = uco_cell_decrement_counter(cell);
-#ifdef DEBUG
-		printf("release: %lx %ld %d\n", pthread_self(), cell->seq, count);
-#endif
-		if (count == 0){
-			fflush(stdout);
-			abort();
-		}
-
-#if 0
-		if (count == 2){
-			__free_dq(cell->state, (void (*)(struct _decision_queue *))free);
-			cell->state = 0;
-			uco_cell_decrement_counter(cell);
-		}
-#endif
 	
-		cell = before;
+	do {
+
+		uco_cell_decrement_counter(cell);
+		cell = & cell_pool[cell->before];
 	} while(n--);
 }
+
 #endif
 
-int uco_find_free_cell(struct uco_cell cell_pool[], int n)
+int uco_find_free_cell(struct uco_cell cell_pool[], int pool_size)
 {
 	int i;
 
-	for (i=0; i<n; ++i)
+	for (i=0; i<pool_size; ++i)
 		if (cell_pool[i].count == 0)
 			break;
-	if (i == n)
-		abort();
-	__free_dq(cell_pool[i].state, (void (*)(struct _decision_queue*)) free);
+
+	assert (i < pool_size);
+	
 	return i;
 }
 
@@ -175,12 +114,13 @@ int uco_find_free_cell(struct uco_cell cell_pool[], int n)
 
  */
 
-int uco_thread_setup(int proc_count, struct uco_cell cell_pool[], int n)
+int uco_thread_setup(struct uco *uco, struct uco_cell cell_pool[], int pool_size)
 {
 	int cell;
+	int consensus_number = uco->consensus_number;
 
-	cell = uco_find_free_cell(cell_pool, n);
-	uco_initialize_cell(&cell_pool[cell], proc_count);
+	cell = uco_find_free_cell(cell_pool, pool_size);
+	uco_initialize_cell(&cell_pool[cell], consensus_number);
 
 	return cell;
 }
@@ -191,7 +131,7 @@ int uco_thread_cell(struct uco *uco, int p, int initialized_cell, struct uco_cel
 	int new_state;
 
 	int n = uco -> consensus_number;
-	struct uco_threading_state ts[] = uco -> threading_state;
+	struct uco_threading_state *ts = uco -> threading_state;
 
 	ts[p].announce = initialized_cell;
 	
@@ -203,8 +143,8 @@ int uco_thread_cell(struct uco *uco, int p, int initialized_cell, struct uco_cel
 		int help    = ts[cell_pool[head].seq % n].announce;
 		int prefer  = (cell_pool[help].seq == 0) ? help : ts[p].announce;
 	        int after   = uco_cell_decide_after(&cell_pool[head], prefer);
-		
-		uco->do_invocation(after, &new_state, cell_pool[head].state, uco->full_state);
+
+		new_state = uco->do_invocation(p, after, cell_pool[head].state);
 		uco_cell_decide_state(&cell_pool[after], new_state);
 
 		cell_pool[after].before   = head;
@@ -214,6 +154,9 @@ int uco_thread_cell(struct uco *uco, int p, int initialized_cell, struct uco_cel
         }
       
 	ts[p].head = ts[p].announce;
+
+	uco_release_cells(ts[p].head, n, cell_pool);
+	
 
         return new_state;
 }
@@ -233,7 +176,6 @@ enum my_result {
 };
 
 struct my_state {
-	struct _decision_queue dq;
 	enum my_result result;
 	int first;
 	int last;
@@ -248,72 +190,76 @@ struct my_op {
 };
 
 
-struct my_state initial_state = {{NULL}, OK};
-struct uco_cell cell_pool[N*UCO_CELLS_NO(N) + 1] = {{1, &initial_state.dq, 0, -1, 0}};
+#define NELEM(a) (sizeof(a)/sizeof((a)[0]))
 
-struct my_op my_op_pool[sizeof(cell_pool)/sizeof(typeof(cell_pool[0]))];
+struct uco_cell cell_pool[1 + N*UCO_CELLS_NO(N)] = {UCO_INITIAL_CELL};
+struct my_state state_pool[NELEM(cell_pool)][N] = {OK};
+struct my_op my_op_pool[NELEM(cell_pool)];
 
  
 #include <string.h>
 
-void do_invocation(int op_cell, struct _decision_queue ** new_dq, struct _decision_queue *old_dq)
+int do_invocation(int p, int cell, int prev)
 {
-	struct my_state **new = (struct my_state**) new_dq;
-	struct my_state *old = (struct my_state*) old_dq;
-	struct my_op *op = & my_op_pool[op_cell];
+	struct my_state *new = &state_pool[cell][p];
+	struct my_state *old = &state_pool[prev/N][prev%N];
+	struct my_op    *op = & my_op_pool[cell];
 
-	*new = (struct my_state*) malloc(sizeof(struct my_state));
-	memcpy(*new, old, sizeof(struct my_state));
+      
+	memcpy(new, old, sizeof(struct my_state));
 
 	switch (op -> opcode) {
 		int last;
 	case ENQ:
 		last = (old->last + 1) % 40;
 		if (last == old->first) {
-			(*new) -> result = FULL;
+			new -> result = FULL;
 			break;
 		}
-		(*new) -> last = last;
-		(*new)->queue[(*new) -> last].x = op -> arg;
-		(*new)->queue[(*new) -> last].p = op -> p;
-		(*new) -> result = OK;
+		new -> last = last;
+		new->queue[new -> last].x = op -> arg;
+		new->queue[new -> last].p = op -> p;
+		new -> result = OK;
 		break;
 	case DEQ:
 		if (old->first == old->last) {
-			(*new) -> result = EMPTY;
+			new -> result = EMPTY;
 			break;
 		}
-		(*new) -> first += 1;
-		(*new) -> first %= 40;
-		(*new) -> result = OK;
+		new -> first += 1;
+		new -> first %= 40;
+		new -> result = OK;
 
 		break;
 	
 	}
+
+	return cell*N + p;
 }
 
 #include <stdio.h>
 
-struct uco_threading_state threading_state[N];
-
-
-struct uco_cell initial_cell = {1, &initial_state.dq, 0, -1, 0};
+struct my_uco {
+	struct uco uco;
+	struct uco_threading_state ts[N];
+} my_uco = {{N, do_invocation}};
 
 void* producer(void* x)
 {
 	int p = * (int*) x;
 	int i = 0;
 	struct my_state *s;
-	/*initial_cell.state = &initial_state.dq;*/
         int op_cell;
 
 	printf("producer start\n");
 	while (i>=0) {
-		op_cell = uco_thread_setup(N, cell_pool, UCO_CELL_NO(N));
+		int x;
+		op_cell = uco_thread_setup(&my_uco.uco, cell_pool, NELEM(cell_pool));
 		my_op_pool[op_cell].opcode = ENQ;
 		my_op_pool[op_cell].p = p;
 		my_op_pool[op_cell].arg = i;
-		s = (struct my_state*) uco_thread_cell(p, N, op_cell, cell_pool, threading_state, do_invocation);
+		x = uco_thread_cell(&my_uco.uco, p, op_cell, cell_pool);
+		s = & state_pool[x/N][x%N];
 		
 		if (s->result == FULL){
 			sched_yield();
@@ -336,11 +282,13 @@ void* consumer(void* x)
 	int op_cell;
 
 	while (i>=00) {
-		op_cell	= 1 + p*UCO_CELLS_NO(N) + uco_find_free_cell(& cell_pool[1 + p*UCO_CELLS_NO(N)], UCO_CELLS_NO(N));
-		uco_initialize_cell(& cell_pool[op_cell]);
+		int x;
+		op_cell	= uco_thread_setup(&my_uco.uco, cell_pool, NELEM(cell_pool));
+		uco_initialize_cell(& cell_pool[op_cell], N);
 		my_op_pool[op_cell].p = p;
 		my_op_pool[op_cell]. opcode = DEQ;
-		s = (struct my_state*) uco_thread_cell(p, N, op_cell, cell_pool, threading_state, do_invocation);
+	        x = uco_thread_cell(&my_uco.uco, p, op_cell, cell_pool);
+		s = & state_pool[x/N][x%N];
 
 		if (s->result == EMPTY){
 			sched_yield();
@@ -359,23 +307,14 @@ void* consumer(void* x)
 
 int main()
 {
-	
-	int i;
 	pthread_t t[N];
-	int p[N];
-	
-	
-	for (i=0; i<N; i++)
-		threading_state[i].head = threading_state[i].announce = 0;
-
-	for (i=0; i<N; ++i)
-		p[i] = i;
+	int p[N] = {1,2,3,4,5};
 
 	
 	pthread_create(&t[0], NULL, consumer, &p[0]);
 	pthread_create(&t[1], NULL, producer, &p[1]);
-	pthread_create(&t[2], NULL, producer, &p[2]);	
-	pthread_create(&t[3], NULL, consumer, &p[3]);
+	//pthread_create(&t[2], NULL, producer, &p[2]);	
+	//pthread_create(&t[3], NULL, consumer, &p[3]);
 	
 	pause();
 	
