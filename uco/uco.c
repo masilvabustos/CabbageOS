@@ -7,30 +7,49 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>
+
 struct _decision_queue {
-	struct _decision_queue* dq_link;
+	int first;
+	int *next;
 };
 
-struct _decision_queue* __queue_and_peek(struct _decision_queue* *q, struct _decision_queue *x)
+int __queue_and_peek(int *q, int x, int link[])
 {
-	struct _decision_queue* peek = *q, *d;
+	int prev;
 
-	x -> dq_link = NULL;
+	link[x] = -1;
 
-	while((d = __sync_val_compare_and_swap(q, NULL, x)) != NULL)
-		q = & d->dq_link;
+	while((prev = __sync_val_compare_and_swap(q, -1, x)) != -1)
+		q = & link[prev];
 
-	return peek;
+	return *q;
 }
 
-void __free_dq(struct _decision_queue *q, void (*free)(struct _decision_queue *))
+
+void __free_dq(int q, int link[], int reserved[])
 {
-	if (q == NULL)
+	if (q == -1)
 		return;
 
-	__free_dq(q->dq_link, free);
+	__free_dq(link[q], link, reserved);
 
-	free(q);
+	__release_state_object(reserved, q);
+}
+
+/** Find  and aquiere a state object */
+
+int uco_find_free_state_object(int held_map[], int begin, int end)
+{
+	while(begin < end && held_map[begin] == 1)
+		++begin;
+
+	held_map[begin] = 1;
+	return begin;
+}
+
+void __free_state_object(int held_map[], int n)
+{
+	held_map[n] = 0;
 }
 
 
@@ -46,7 +65,9 @@ struct uco_threading_state {
 };
 
 struct uco {
-	unsigned cnum; /**<< consensus number */
+	unsigned consensus_number; /**<< consensus number */
+	void* full_state; /**<< Object full state. This includes all state transitions, even discarded ones. */
+	int (*do_invocation)(int,int*,int,void*);
 	struct uco_threading_state threading_state[];
 };
 
@@ -54,7 +75,7 @@ struct uco {
 
 struct uco_cell {
 	long int 	  	 seq;   /**< Sequence number for operation ordering */
-	struct _decision_queue*  state; /**< The object state at the cell operation */
+	int                      state; /**< The object state at the cell operation */
 	int                      after; /**< A link to the next cell */
 
 	unsigned int            count;   /**< Reference count */
@@ -65,17 +86,19 @@ struct uco_cell {
 
 #define UCO_INIT ((struct uco_cell) {0, NULL, NULL})
 
-struct uco_cell* uco_initialize_cell(struct uco_cell* cell)
+struct uco_cell* uco_initialize_cell(struct uco_cell* cell, int n)
 {
-	cell -> seq   = 0;
-	cell -> after = 0;
+	cell -> seq    = 0;
+	cell -> after  = 0;
 	cell -> before = 0;
-	cell -> state = 0;
+	cell -> state  = 0;
+	cell -> count  = n + 1;
 	
 	return cell;
 }
 
 #define UCO_CELLS_NO(N) (N*N + N + 1)
+#define UCO_STATE_NO(N) (N*N + 2*N)
 
 /** Decision procedures */
 
@@ -88,9 +111,9 @@ int uco_cell_decide_after(struct uco_cell* cell, int prefer)
 	return (ret == 0) ? prefer : ret;
 }
 
-struct _decision_queue* uco_cell_decide_state(struct uco_cell* cell, struct _decision_queue* prefer)
+struct _decision_queue* uco_cell_decide_state(struct uco_cell* cell, struct _decision_queue *prefer)
 {
-	return __queue_and_peek(&cell->state, prefer);
+	return __queue_and_peek(&cell->state, prefer->first, prefer->next);
 }
 
 int uco_cell_decrement_counter(struct uco_cell* cell)
@@ -120,8 +143,8 @@ void uco_release_cells(int head, int n, struct uco_cell cell_pool[])
 		}
 
 #if 0
-		if (count == 1){
-			__free_dq(cell->state, free);
+		if (count == 2){
+			__free_dq(cell->state, (void (*)(struct _decision_queue *))free);
 			cell->state = 0;
 			uco_cell_decrement_counter(cell);
 		}
@@ -145,12 +168,31 @@ int uco_find_free_cell(struct uco_cell cell_pool[], int n)
 	return i;
 }
 
-struct _decision_queue* uco_thread_cell(int p, int n, int initialized_cell, struct uco_cell cell_pool[], struct uco_threading_state ts[], void (*do_invocation)(int, struct _decision_queue**, struct _decision_queue*))
+/* Per-process info:
+ * - process id 
+ * - invocation context
+ * - free cell (from its cell pool)
+
+ */
+
+int uco_thread_setup(int proc_count, struct uco_cell cell_pool[], int n)
+{
+	int cell;
+
+	cell = uco_find_free_cell(cell_pool, n);
+	uco_initialize_cell(&cell_pool[cell], proc_count);
+
+	return cell;
+}
+
+int uco_thread_cell(struct uco *uco, int p, int initialized_cell, struct uco_cell cell_pool[])
 {
 	int q;
-	struct _decision_queue* new_state;
+	int new_state;
 
-	cell_pool[initialized_cell].count = n +1;
+	int n = uco -> consensus_number;
+	struct uco_threading_state ts[] = uco -> threading_state;
+
 	ts[p].announce = initialized_cell;
 	
 	for (q=n-1; q >= 0; --q)
@@ -161,8 +203,8 @@ struct _decision_queue* uco_thread_cell(int p, int n, int initialized_cell, stru
 		int help    = ts[cell_pool[head].seq % n].announce;
 		int prefer  = (cell_pool[help].seq == 0) ? help : ts[p].announce;
 	        int after   = uco_cell_decide_after(&cell_pool[head], prefer);
-
-		do_invocation(after, &new_state, cell_pool[head].state);
+		
+		uco->do_invocation(after, &new_state, cell_pool[head].state, uco->full_state);
 		uco_cell_decide_state(&cell_pool[after], new_state);
 
 		cell_pool[after].before   = head;
@@ -172,8 +214,6 @@ struct _decision_queue* uco_thread_cell(int p, int n, int initialized_cell, stru
         }
       
 	ts[p].head = ts[p].announce;
-
-	uco_release_cells(ts[p].head, n, cell_pool);
 
         return new_state;
 }
@@ -269,8 +309,7 @@ void* producer(void* x)
 
 	printf("producer start\n");
 	while (i>=0) {
-		op_cell = 1 + p*UCO_CELLS_NO(N) + uco_find_free_cell(&cell_pool[1+p*UCO_CELLS_NO(N)], UCO_CELLS_NO(N));	
-		uco_initialize_cell(&cell_pool[op_cell]);
+		op_cell = uco_thread_setup(N, cell_pool, UCO_CELL_NO(N));
 		my_op_pool[op_cell].opcode = ENQ;
 		my_op_pool[op_cell].p = p;
 		my_op_pool[op_cell].arg = i;
