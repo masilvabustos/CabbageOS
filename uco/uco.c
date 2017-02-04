@@ -84,10 +84,12 @@ int uco_cell_decrement_counter(struct uco_cell* cell)
 void uco_release_cells(int head, int n, struct uco_cell cell_pool[])
 {
 	struct uco_cell *cell = & cell_pool[cell_pool[head].before];
+	int prev;
 	
 	do {
 
-		uco_cell_decrement_counter(cell);
+		prev = uco_cell_decrement_counter(cell);
+		assert(prev > 0);
 		cell = & cell_pool[cell->before];
 	} while(n--);
 }
@@ -114,12 +116,12 @@ int uco_find_free_cell(struct uco_cell cell_pool[], int pool_size)
 
  */
 
-int uco_thread_setup(struct uco *uco, struct uco_cell cell_pool[], int pool_size)
+int uco_thread_setup(struct uco *uco, int p, struct uco_cell cell_pool[], int pool_size)
 {
 	int cell;
 	int consensus_number = uco->consensus_number;
 
-	cell = uco_find_free_cell(cell_pool, pool_size);
+	cell = 1 + p*pool_size + uco_find_free_cell(&cell_pool[1 + p*pool_size], pool_size);
 	uco_initialize_cell(&cell_pool[cell], consensus_number);
 
 	return cell;
@@ -158,7 +160,7 @@ int uco_thread_cell(struct uco *uco, int p, int initialized_cell, struct uco_cel
 	uco_release_cells(ts[p].head, n, cell_pool);
 	
 
-        return new_state;
+        return cell_pool[ts[p].head].state;
 }
 
 #define N 5
@@ -254,11 +256,12 @@ void* producer(void* x)
 	printf("producer start\n");
 	while (i>=0) {
 		int x;
-		op_cell = uco_thread_setup(&my_uco.uco, cell_pool, NELEM(cell_pool));
+		op_cell = uco_thread_setup(&my_uco.uco, p, cell_pool, UCO_CELLS_NO(N));
 		my_op_pool[op_cell].opcode = ENQ;
 		my_op_pool[op_cell].p = p;
 		my_op_pool[op_cell].arg = i;
 		x = uco_thread_cell(&my_uco.uco, p, op_cell, cell_pool);
+		assert(x%N < NELEM(state_pool[0]) && x/N < NELEM(state_pool));
 		s = & state_pool[x/N][x%N];
 		
 		if (s->result == FULL){
@@ -283,18 +286,19 @@ void* consumer(void* x)
 
 	while (i>=00) {
 		int x;
-		op_cell	= uco_thread_setup(&my_uco.uco, cell_pool, NELEM(cell_pool));
+		op_cell	= uco_thread_setup(&my_uco.uco, p, cell_pool, UCO_CELLS_NO(N));
 		uco_initialize_cell(& cell_pool[op_cell], N);
 		my_op_pool[op_cell].p = p;
 		my_op_pool[op_cell]. opcode = DEQ;
 	        x = uco_thread_cell(&my_uco.uco, p, op_cell, cell_pool);
+		assert(x%N < NELEM(state_pool[0]) && x/N < NELEM(state_pool));
 		s = & state_pool[x/N][x%N];
 
 		if (s->result == EMPTY){
 			sched_yield();
 			continue;
 		}
-		printf("[%07ld] consumer[%d]: (%d) %d\n", cell_pool[op_cell].seq, p, s->queue[s->first].p, s->queue[s->first].x);
+		printf("[%07ld] consumer @ proc=%d : (from %d) value=%d\n", cell_pool[op_cell].seq, p, s->queue[s->first].p, s->queue[s->first].x);
 		++ i;
 	}
 
@@ -309,6 +313,8 @@ int main()
 {
 	pthread_t t[N];
 	int p[N] = {1,2,3,4,5};
+
+	cell_pool[0].count = N + 1;
 
 	
 	pthread_create(&t[0], NULL, consumer, &p[0]);
