@@ -32,13 +32,13 @@ struct uco_cell {
 
 	int           after; /**< A link to the next cell */
 
-	unsigned int  count;   /**< Reference count */
+	unsigned int  gc;   /**< GC info. Reference count */
         int           before; /** A link for garbage collecting */
 
 	int          state; 
 };
 
-#define UCO_INITIAL_CELL (struct uco_cell) {.seq = 1, .after = -1, .count = -1, .before = 0, .state = 0}
+#define UCO_INITIAL_CELL (struct uco_cell) {.seq = 1, .after = -1, .gc = -1, .before = 0, .state = 0}
 
 /** UCO initialization */
 
@@ -50,7 +50,12 @@ struct uco_cell* uco_initialize_cell(struct uco_cell* cell, int n)
 	cell -> after  = -1;
 	cell -> before = -1;
 	cell -> state  = -1;
-	cell -> count  = n + 1;
+#if 0 
+	cell -> gc  = n + 1;
+#else
+	cell -> gc = (1 << (n + 1)) - 1;
+#endif
+	
 	
 	return cell;
 }
@@ -77,10 +82,10 @@ int uco_cell_decide_state(struct uco_cell* cell, int prefer)
 
 int uco_cell_decrement_counter(struct uco_cell* cell)
 {
-	return __sync_fetch_and_add(&cell->count, -1);
+	return __sync_fetch_and_add(&cell->gc, -1);
 }
 
-#if 1
+#if 0
 void uco_release_cells(int head, int n, struct uco_cell cell_pool[])
 {
 	struct uco_cell *cell = & cell_pool[cell_pool[head].before];
@@ -89,11 +94,33 @@ void uco_release_cells(int head, int n, struct uco_cell cell_pool[])
 	do {
 
 		prev = uco_cell_decrement_counter(cell);
-		assert(prev > 0);
+		assert(prev > 0 || cell == & cell_pool[cell->before] );
 		cell = & cell_pool[cell->before];
 	} while(n--);
 }
 
+#else
+
+void uco_release_cells(int head, int consensus_number, struct uco_cell cell_pool[])
+{
+	int n = consensus_number;
+
+	struct uco_cell *cell = & cell_pool[cell_pool[head].before];
+
+	int mask = 1;
+	
+	do {
+		int prev;
+		
+		prev = __sync_fetch_and_and(&cell->gc, ~mask);
+
+		assert(prev & mask);
+		
+		cell = & cell_pool [cell->before];
+		mask <<= 1;
+		
+	} while (n--);
+}
 #endif
 
 int uco_find_free_cell(struct uco_cell cell_pool[], int pool_size)
@@ -101,7 +128,7 @@ int uco_find_free_cell(struct uco_cell cell_pool[], int pool_size)
 	int i;
 
 	for (i=0; i<pool_size; ++i)
-		if (cell_pool[i].count == 0)
+		if (cell_pool[i].gc == 0)
 			break;
 
 	assert (i < pool_size);
@@ -314,11 +341,11 @@ int main()
 	pthread_t t[N];
 	int p[N] = {1,2,3,4,5};
 
-	cell_pool[0].count = N + 1;
+	//cell_pool[0].gc = (1 << (N+1)) - 1;
 
 	
 	pthread_create(&t[0], NULL, consumer, &p[0]);
-	pthread_create(&t[1], NULL, producer, &p[1]);
+	//pthread_create(&t[1], NULL, producer, &p[1]);
 	//pthread_create(&t[2], NULL, producer, &p[2]);	
 	//pthread_create(&t[3], NULL, consumer, &p[3]);
 	
