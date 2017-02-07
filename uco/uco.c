@@ -53,7 +53,7 @@ struct uco_cell* uco_initialize_cell(struct uco_cell* cell, int n)
 #if 0 
 	cell -> gc  = n + 1;
 #else
-	cell -> gc = (1 << (n + 1)) - 1;
+	cell -> gc = (1 << (n + 2)) - 1;
 #endif
 	
 	
@@ -103,23 +103,25 @@ void uco_release_cells(int head, int n, struct uco_cell cell_pool[])
 
 void uco_release_cells(int head, int consensus_number, struct uco_cell cell_pool[])
 {
-	int n = consensus_number;
-
-	struct uco_cell *cell = & cell_pool[cell_pool[head].before];
+	int n = consensus_number +2;
+	struct uco_cell *cell = & cell_pool[head];
 
 	int mask = 1;
 	
-	do {
+	while(n--) {
+		
 		int prev;
+
+		struct uco_cell* before = & cell_pool[cell->before];
 		
 		prev = __sync_fetch_and_and(&cell->gc, ~mask);
 
-		assert(prev & mask);
+		assert(prev & mask || (cell == & cell_pool[cell->before]));
 		
-		cell = & cell_pool [cell->before];
+		cell = before;
 		mask <<= 1;
 		
-	} while (n--);
+	};
 }
 #endif
 
@@ -168,6 +170,9 @@ int uco_thread_cell(struct uco *uco, int p, int initialized_cell, struct uco_cel
 		ts[p].head = ts[((cell_pool[ts[q].head].seq > cell_pool[ts[p].head].seq) ? q : p)].head;
 
 	while(cell_pool[ts[p].announce].seq == 0) {
+
+		assert(cell_pool[ts[p].head].gc != 0);
+		
 		int head    = ts[p].head;
 		int help    = ts[cell_pool[head].seq % n].announce;
 		int prefer  = (cell_pool[help].seq == 0) ? help : ts[p].announce;
@@ -176,15 +181,17 @@ int uco_thread_cell(struct uco *uco, int p, int initialized_cell, struct uco_cel
 		new_state = uco->do_invocation(p, after, cell_pool[head].state);
 		uco_cell_decide_state(&cell_pool[after], new_state);
 
-		cell_pool[after].before   = head;
+		cell_pool[after].before   = head; 
 		cell_pool[after].seq      = cell_pool[head].seq + 1;
 		
 		ts[p].head	= after;
+
+
         }
-      
+	
 	ts[p].head = ts[p].announce;
 
-	uco_release_cells(ts[p].head, n, cell_pool);
+	uco_release_cells(ts[p].head, n, cell_pool);      
 	
 
         return cell_pool[ts[p].head].state;
@@ -339,15 +346,15 @@ void* consumer(void* x)
 int main()
 {
 	pthread_t t[N];
-	int p[N] = {1,2,3,4,5};
+	int p[N] = {0,1,2,3,4};
 
 	//cell_pool[0].gc = (1 << (N+1)) - 1;
 
 	
 	pthread_create(&t[0], NULL, consumer, &p[0]);
-	//pthread_create(&t[1], NULL, producer, &p[1]);
-	//pthread_create(&t[2], NULL, producer, &p[2]);	
-	//pthread_create(&t[3], NULL, consumer, &p[3]);
+	pthread_create(&t[1], NULL, producer, &p[1]);
+	pthread_create(&t[2], NULL, producer, &p[2]);	
+	pthread_create(&t[3], NULL, consumer, &p[3]);
 	
 	pause();
 	
