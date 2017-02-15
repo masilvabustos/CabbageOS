@@ -128,14 +128,20 @@ void uco_release_cells(int head, int consensus_number, struct uco_cell cell_pool
 int uco_find_free_cell(struct uco_cell cell_pool[], int pool_size)
 {
 	int i;
-
+	int c = -1;
 	for (i=0; i<pool_size; ++i)
-		if (cell_pool[i].gc == 0)
+		if (cell_pool[i].gc == 0) {
+			c = i;
 			break;
-
-	assert (i < pool_size);
+		}
 	
-	return i;
+	for (i=i; i<pool_size; ++i)
+		if (cell_pool[i].gc == 0)
+			c = (cell_pool[i].seq < cell_pool[c].seq) ? i : c;
+
+	assert (c != -1);
+	
+	return c;
 }
 
 /* Per-process info:
