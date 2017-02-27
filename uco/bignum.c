@@ -51,12 +51,56 @@ void __mul_u296_u8(struct u296 *x, uint8_t f)
 
 }
 
+void lehmer_encode(uint8_t a[], unsigned n)
+{
+	int i,j;
+
+	for (i=0; i<n; ++i)
+		for (j=i+1; j<n; ++j)
+			if (a[j] >= a[i])
+				-- a[j];
+}
+
+void lehmer_decode(uint8_t a[], unsigned n)
+{
+	int i,j;
+
+	for (i=n-1; i>=0; --i)
+		for (j=i+1; j<n; ++j)
+			if (a[j] >= a[i])
+				++ a[j];
+}
 
 #include <stdio.h>
 
 void printu296(struct u296 x)
 {
 	printf("%02hhx:%08x:%016lx:%016lx:%016lx:%016lx\n", (uint8_t) (x.b256_295 >> 32), (uint32_t) x.b256_295, x.b0_255[3], x.b0_255[2], x.b0_255[1], x.b0_255[0] );
+}
+
+void lehmer_test()
+{
+	uint8_t a[] = {3, 4, 7, 1, 0, 2, 5, 6};
+	int n = sizeof(a)/sizeof(a[0]);
+	int i;
+	
+	for (i=0; i<n; ++i)
+		printf("%d ", a[i]);
+	printf("\n");
+
+	lehmer_encode(a, n);
+
+	for (i=0; i<n; ++i)
+		printf("%d ", a[i]);
+	printf("\n");
+
+	lehmer_decode(a, n);
+
+	for (i=0; i<n; ++i)
+		printf("%d ", a[i]);
+	printf("\n");
+
+	
 }
 
 int main()
@@ -84,6 +128,8 @@ int main()
 	__div_u296_u8(&x, f);
 
 	printu296(x);
+
+	lehmer_test();
 	
 	return 0;
 }
