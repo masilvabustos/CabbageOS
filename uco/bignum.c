@@ -161,6 +161,28 @@ void lehmer_decode(uint8_t a[], unsigned n)
 				++ a[j];
 }
 
+void ordinal_to_lehmer(uint64_t *msd, uint64_t od[], int n, uint8_t lehmer[], int m)
+{
+	int i;
+	for (i = 1; m--; ++i) {
+
+		lehmer[m] = __div64(msd, od, n, i);
+	}
+}
+
+void lehmer_to_ordinal(uint8_t lehmer[], int n, uint64_t *msd, uint64_t od[], int m)
+{
+	int i;
+
+	for(i=0; i<m; ++i)
+		od[i] = 0;
+	*msd = 0;
+	
+	for (i=0; --n; ++i) {
+		__sum64(msd, od, m, lehmer[i]);
+		__mul64(msd, od, m, n);
+	}
+}
 #include <stdio.h>
 
 void printu296(struct u296 x)
