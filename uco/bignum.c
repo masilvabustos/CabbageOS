@@ -32,6 +32,27 @@ uint8_t __div_u296_u8(struct u296 *x, uint8_t d)
         return r;
 }
 
+/* specialized version for divide */
+
+uint8_t __div64(uint64_t *msd, uint64_t od[], unsigned n, uint8_t d)
+{
+	uint128_t r;
+
+	r = *msd;
+	*msd = r / d;
+
+	while(n--) {
+		r %= d;
+		r <<= 64;
+		r |= od[n];
+
+		od[n] = r / d;
+	}
+
+	r %= d;
+
+	return r;
+}
 
 void __mul_u296_u8(struct u296 *x, uint8_t f)
 {
@@ -49,6 +70,75 @@ void __mul_u296_u8(struct u296 *x, uint8_t f)
 	p += x->b256_295 * f;
 	x -> b256_295 = p;
 
+}
+
+void __mul64(uint64_t *msd, uint64_t od[], int n, uint8_t f)
+{
+        uint128_t p;
+	int i;
+	
+	p = 0;
+
+	for (i=0; n--; ++i) {
+		p += (uint128_t) od[i] * f;
+		od[i] = p;
+		p >>= 64;
+        };
+
+	p += *msd * f;
+	*msd = p;
+
+}
+
+unsigned __mulint(unsigned msd, unsigned od[], int n, uint8_t f)
+{
+        long unsigned p;
+	int i;
+	
+	p = 0;
+
+	for (i=0; n--; ++i) {
+		p += (long unsigned) od[i] * f;
+		od[i] = p;
+		p >>= sizeof(unsigned)*8;
+        };
+
+	p += msd * f;
+	msd = p;
+
+	return msd;
+}
+
+void __sum64(uint64_t *msd, uint64_t od[], int n, uint8_t s)
+{
+	uint128_t r = s;
+	int i;
+	
+	for(i=0; n--; ++i){
+		r += od[i];
+		od[i] = r;
+		r >>= 64;
+	}
+
+	r += *msd;
+	*msd = r;
+}
+
+unsigned __sumint(unsigned msd, unsigned od[], int n, uint8_t s)
+{
+	long unsigned r = s;
+	int i;
+	
+	for(i=0; n--; ++i){
+		r += od[i];
+		od[i] = r;
+		r >>= sizeof(unsigned)*8;
+	}
+
+	r += msd;
+	msd = r;
+
+	return msd;
 }
 
 void lehmer_encode(uint8_t a[], unsigned n)
