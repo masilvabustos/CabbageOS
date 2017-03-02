@@ -183,6 +183,8 @@ void lehmer_to_ordinal(uint8_t lehmer[], int n, uint64_t *msd, uint64_t od[], in
 		__mul64(msd, od, m, n);
 	}
 }
+
+
 #include <stdio.h>
 
 void printu296(struct u296 x)
@@ -215,12 +217,41 @@ void lehmer_test()
 	
 }
 
+void decode_test()
+{
+	int n;
+	uint8_t a[4];
+	uint64_t x;
+	
+	for(n=0; n<24; ++n) {
+		int i;
+		
+		x = n;
+		get_permutation(&x, 0, 0, a, 4);
+
+		printf("%d : ", n);
+		for (i=0; i<4; ++i)
+			printf("%d ", a[i]);
+
+		lehmer_to_ordinal(a, 4, &x, 0, 0);
+
+		printf(": %ld\n", x);
+		
+		printf("\n");
+
+		
+	
+	}
+}
+
 int main()
 {
 	struct u296 x;
+	uint64_t t;
 	unsigned __int128 p;
 	unsigned int f = 253;
-	
+
+	printf("%ld\n", sizeof(unsigned long));
 	printf("sizeof(u296) = %lu\n", sizeof(struct u296)*8);
 
 	x = (struct u296) {{0xabcd111212211, 0xaaabbbcccaa3322, 0x3342351ddcc42344, 0x232adad1a3232323}, 0xabcd};
@@ -235,13 +266,14 @@ int main()
 	//	p *= f;
 	//printf("esperado: %016lx:%016lx\n", (uint64_t) (p >> 64), (uint64_t) p); 
 
-
-
-	__div_u296_u8(&x, f);
+	
+	t = x.b256_295;
+	__div64(&t, x.b0_255, 4, f);
+	x.b256_295 = t;
 
 	printu296(x);
 
-	lehmer_test();
+	decode_test();
 	
 	return 0;
 }
